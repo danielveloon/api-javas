@@ -28,28 +28,29 @@ def predict_covid():
         if coluna not in dados:
             return jsonify({"erro": f"Campo '{coluna}' está ausente."}), 400
 
+    # Preparando os dados
     entrada = pd.DataFrame([dados])
-    entrada = entrada.astype(str)  # conversão para string, necessária para o encoder
+    entrada = entrada.astype(str)  # encoder espera strings
 
-    entrada_transformada = encoder.transform(entrada).toarray()
-    resultado = modelo.predict(entrada_transformada)
+    try:
+        entrada_transformada = encoder.transform(entrada).toarray()
+    except Exception as e:
+        return jsonify({"erro": f"Erro ao transformar os dados: {str(e)}"}), 500
 
-    mapa_previsao = {
-        'Sim': 1,
-        'Não': 0
-    }
-
-    previsao_str = resultado[0]
-
-    if previsao_str in mapa_previsao:
-        previsao = mapa_previsao[previsao_str]
-    else:
-        return jsonify({"erro": f"Valor inesperado na predição: {previsao_str}"}), 500
+    try:
+        # Predição e probabilidade
+        probas = modelo.predict_proba(entrada_transformada)
+        probabilidade_covid = probas[0][1]  # índice 1 = classe "Positivo"
+        previsao = int(probabilidade_covid >= 0.5)
+    except Exception as e:
+        return jsonify({"erro": f"Erro ao realizar a predição: {str(e)}"}), 500
 
     return jsonify({
         "previsao": previsao,
-        "resultado": "Positivo para COVID" if previsao == 1 else "Negativo para COVID"
+        "resultado": "Positivo para COVID" if previsao == 1 else "Negativo para COVID",
+        "probabilidade": round(probabilidade_covid * 100, 2)  # em porcentagem
     })
+
 
 if __name__ == "__main__":
     app.run(debug=True)
