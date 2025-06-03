@@ -9,7 +9,6 @@ CORS(app)
 # Carregando modelo e encoder
 modelo, encoder = pickle.load(open('covid_model.pkl', 'rb'))
 print("Modelo e encoder carregados")
-print(encoder.categories_)
 
 
 @app.route("/predict_covid", methods=['POST'])
